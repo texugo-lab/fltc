@@ -18,6 +18,12 @@ typedef struct tok {
 	strng token;
 	TokenType type;
 } Token;
+typedef struct toks {
+	Token* tokens;
+	bool hasNumber;
+	bool hasBool;
+	bool hasStrng;
+} Tokens;
 
 // VARIABLES
 #define NUMBER_VAR 0
@@ -49,10 +55,11 @@ bool needleInHaystack(char needle, strng haystack) {
 	return false;
 }
 
-Token* lexer(strng string) {
-	Token* tokens = calloc(MAX_TOKENS, sizeof(Token));
+Tokens lexer(strng string) {
+	Tokens tokenTable = {.tokens = calloc(MAX_TOKENS, sizeof(Token)), .hasStrng = false, .hasBool = false, .hasNumber = false};
+	Token* tokens = tokenTable.tokens;
 	if (!tokens)
-		return NULL;
+		return (Tokens){NULL};
 
 	for (size_t i = 0; i <= strlen(string); i++) {
 		if (string[i] == '\0' || string[i] == ' ')
@@ -85,9 +92,12 @@ Token* lexer(strng string) {
 
 			if (keyword)
 				tokenAppend(tokens, (Token){word, KEYWORD});
-			else if (variable)
+			else if (variable) {
 				tokenAppend(tokens, (Token){word, VARIABLE});
-			else
+				if (strcmp(word, variables[NUMBER_VAR]) == 0) {
+					tokenTable.hasNumber = true;
+				}
+			} else
 				tokenAppend(tokens, (Token){word, IDENTIFIER});
 			i = j - 1;
 		}
@@ -114,5 +124,5 @@ Token* lexer(strng string) {
 		}
 	}
 
-	return tokens;
+	return tokenTable;
 }

@@ -1,6 +1,3 @@
-os="$OSTYPE"
-
-fileName="compiler.c"
 executableName="fltc"
 location="./"
 
@@ -15,12 +12,12 @@ case "$OSTYPE" in
 esac
 
 if [ "$os" == "linux" ]; then
-	location="$HOME/.local/bin/"
-	gcc $fileName -Wall -Wextra -o $location$executableName
+	location="/usr/local/bin"
+	sudo rm -rf $location/$executableName
 elif [ "$os" == "win" ]; then
-	location="/c/program\ files"
-	gcc $fileName -Wall -Wextra -o $location$executableName.exe
+	location="$HOME/bin"
+	sudo rm -rf $location/$executableName
 elif [ "$os" == "macos" ]; then
-	location="$HOME/.local/bin"
-	gcc $fileName -Wall -Wextra -o $location$executableName.app
+	location="/usr/local/bin"
+	sudo rm -rf $location/$executableName
 fi

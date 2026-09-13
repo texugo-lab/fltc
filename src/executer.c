@@ -7,48 +7,21 @@
 
 #pragma once
 
-void compile(strng fileName, strng outputName) {
+void compile(strng fileName, strng cFileName) {
 	strng fileText = LoadFileText(fileName);
-	FILE* cOutput = fopen(textFormat("%s.c", outputName), WRITE);
+	FILE* cOutput = fopen(cFileName, WRITE);
+
+	Tokens lexed = lexer(fileText);
 
 	{
 		fprintf(cOutput,
 				"#include <stdio.h>\n"
 				"#include <stdarg.h>\n"
 				"\n"
-				"#define DECIMAL_PRECISION 15\n\n"
-				"#define bool _Bool\n"
-				"#define true 1\n"
-				"#define false 0\n\n"
-				"typedef unsigned char _uint8_t;\n"
-				"typedef unsigned int _uint16_t;\n"
-				"typedef unsigned long _uint32_t;\n"
-				"typedef unsigned long long _uint64_t;\n"
-				"typedef char _int8_t;\n"
-				"typedef int _int16_t;\n"
-				"typedef long _int32_t;\n"
-				"typedef long long _int64_t;\n"
-				"typedef float _float16_t;\n"
-				"typedef double _float32_t;\n"
-				"typedef long double _float64_t;\n"
+				"#define DECIMAL_PRECISION 15\n"
 				"\n"
-				"typedef char* strng;\n\n"
-				"typedef struct numberVariable {\n"
-				"	_uint8_t decimalOffset;\n"
-				"	_uint8_t negative;\n"
-				"	_int64_t integerPart;\n"
-				"	_uint64_t decimalPart;\n"
-				"}nmbr;\n\n"
-				"nmbr nmbrAdd(nmbr a, nmbr b);\n"
-				"nmbr nmbrSub(nmbr a, nmbr b);\n"
-				"nmbr nmbrMul(nmbr a, nmbr b);\n"
-				"nmbr nmbrDiv(nmbr a, nmbr b);\n"
-				"nmbr nmbrPow(nmbr a, nmbr b);\n"
-				"bool nmbrEql(nmbr a, nmbr b);\n"
-				"bool nmbrGrt(nmbr a, nmbr b);\n"
-				"bool nmbrLss(nmbr a, nmbr b);\n"
-				"bool nmbrGrtEql(nmbr a, nmbr b);\n"
-				"bool nmbrLssEql(nmbr a, nmbr b);\n\n"
+				"typedef char* strng;\n"
+				"\n"
 				"strng textFormat(strng string, ...){\n"
 				"	char buf[1024];\n"
 				"	va_list vl;\n"
@@ -58,102 +31,33 @@ void compile(strng fileName, strng outputName) {
 				"	strng result = buf;\n"
 				"	return result;\n"
 				"}\n\n");
-		fprintf(cOutput,
-				"_uint64_t pow10u(_uint8_t n) {\n"
-				"	_uint64_t p = 1;\n"
-				"	while(n--) p *= 10;\n"
-				"	return p;\n"
-				"}\n"
-				"strng nmbrToString(nmbr n) {\n"
-				"	strng string = \"\";\n"
-				"	if(n.negative) string = \"-\";\n"
-				"	string = textFormat(\"%%s%%lld\", string, (long long)n.integerPart);\n"
-				"	if(n.decimalOffset > 0) string = textFormat(\"%%s.%%0*llu\", string, n.decimalOffset, (unsigned long long)n.decimalPart);\n"
-				"	return string;\n"
-				"}\n"
-				"nmbr nmbrVar(_int64_t value, _uint8_t digits) {\n"
-				"	nmbr out;\n"
-				"	if (value < 0) {\n"
-				"		out.negative = 1;\n"
-				"		value = -value;\n"
-				"	} else out.negative = 0;\n"
-				"	while (digits > DECIMAL_PRECISION) {\n"
-				"		value /= 10;\n"
-				"		digits--;\n"
-				"	}\n"
-				"	out.decimalOffset = digits;\n"
-				"	out.integerPart = value / pow10u(digits);\n"
-				"	out.decimalPart = value %% pow10u(digits);\n"
-				"	return out;\n"
-				"}\n"
-				"_int64_t toScaledInteger(nmbr n, _uint8_t digits) {\n"
-				"	_uint64_t scale = pow10u(digits - n.decimalOffset);\n"
-				"	_int64_t value = n.integerPart * pow10u(digits) + n.decimalPart * scale;\n"
-				"	if (n.negative) value = -value;\n"
-				"	return value;\n"
-				"}\n"
-				"_float64_t nmbrToFloat(nmbr n) {\n"
-				"	_float64_t integer = (_float64_t)n.integerPart;\n"
-				"	_float64_t decimal = n.decimalPart / (_float64_t)pow10u(n.decimalPart);\n"
-				"	return integer + decimal;\n"
-				"}\n"
-				"\n"
-				"nmbr nmbrAdd(nmbr a, nmbr b) {\n"
-				"	_uint8_t digits = (a.decimalOffset > b.decimalOffset) ? a.decimalOffset : b.decimalOffset;\n"
-				"	_int64_t va = toScaledInteger(a, digits);\n"
-				"	_int64_t vb = toScaledInteger(b, digits);\n"
-				"	return nmbrVar(va + vb, digits);\n"
-				"}\n"
-				"nmbr nmbrSub(nmbr a, nmbr b) {\n"
-				"	_uint8_t digits = (a.decimalOffset > b.decimalOffset) ? a.decimalOffset : b.decimalOffset;\n"
-				"	_int64_t va = toScaledInteger(a, digits);\n"
-				"	_int64_t vb = toScaledInteger(b, digits);\n"
-				"	return nmbrVar(va - vb, digits);\n"
-				"}\n"
-				"nmbr nmbrMul(nmbr a, nmbr b) {\n"
-				"	_int64_t va = toScaledInteger(a, a.decimalOffset);\n"
-				"	_int64_t vb = toScaledInteger(b, b.decimalOffset);\n"
-				"	_int64_t result = va * vb;\n"
-				"	return nmbrVar(\n"
-				"		result,\n"
-				"		a.decimalOffset + b.decimalOffset);\n"
-				"}\n"
-				"nmbr nmbrDiv(nmbr a, nmbr b) {\n"
-				"	_int64_t va = toScaledInteger(a, a.decimalOffset);\n"
-				"	_int64_t vb = toScaledInteger(b, b.decimalOffset);\n"
-				"	nmbr zero = nmbrVar(0, 0);\n"
-				"	if (vb == 0) return zero;\n"
-				"	_uint64_t numeratorScale = pow10u(DECIMAL_PRECISION + b.decimalOffset);\n"
-				"	_uint64_t denominatorScale = pow10u(a.decimalOffset);\n"
-				"	_int64_t result = (va * numeratorScale) / (vb * denominatorScale);\n"
-				"	return nmbrVar(result, DECIMAL_PRECISION);\n"
-				"}\n"
-				"\n");
-		fprintf(cOutput,
-				"bool nmbrEql(nmbr a, nmbr b) {\n"
-				"	_uint8_t digits = (a.decimalOffset > b.decimalOffset) ? a.decimalOffset : b.decimalOffset;\n"
-				"	return toScaledInteger(a, digits) == toScaledInteger(b, digits);\n"
-				"}\n"
-				"bool nmbrGrt(nmbr a, nmbr b) {\n"
-				"	_uint8_t digits = (a.decimalOffset > b.decimalOffset) ? a.decimalOffset : b.decimalOffset;\n"
-				"	return toScaledInteger(a, digits) > toScaledInteger(b, digits);\n"
-				"}\n"
-				"bool nmbrLss(nmbr a, nmbr b) {\n"
-				"	_uint8_t digits = (a.decimalOffset > b.decimalOffset) ? a.decimalOffset : b.decimalOffset;\n"
-				"	return toScaledInteger(a, digits) < toScaledInteger(b, digits);\n"
-				"}\n"
-				"bool nmbrGrtEql(nmbr a, nmbr b) {\n"
-				"	_uint8_t digits = (a.decimalOffset > b.decimalOffset) ? a.decimalOffset : b.decimalOffset;\n"
-				"	return toScaledInteger(a, digits) >= toScaledInteger(b, digits);\n"
-				"}\n"
-				"bool nmbrLssEql(nmbr a, nmbr b) {\n"
-				"	_uint8_t digits = (a.decimalOffset > b.decimalOffset) ? a.decimalOffset : b.decimalOffset;\n"
-				"	return toScaledInteger(a, digits) <= toScaledInteger(b, digits);\n"
-				"}\n");
+		if (lexed.hasBool) {
+			fprintf(cOutput,
+					"#define bool _Bool\n"
+					"#define true 1\n"
+					"#define false 0\n"
+					"\n");
+		}
+		if (lexed.hasNumber) {
+			fprintf(cOutput,
+					"typedef unsigned char unmbr8;\n"
+					"typedef unsigned int unmbr16;\n"
+					"typedef unsigned long unmbr32;\n"
+					"typedef unsigned long long unmbr64;\n"
+					"typedef char nmbr8;\n"
+					"typedef int nmbr16;\n"
+					"typedef long nmbr32;\n"
+					"typedef long long nmbr64;\n"
+					"typedef float fnmbr16;\n"
+					"typedef double fnmbr32;\n"
+					"typedef long double fnmbr64;\n"
+					"typedef nmbr32 nmbr;\n"
+					"\n");
+		}
 	}
-	fprintf(cOutput, "\nint main(int argc, strng argv[]){\n");
+	fprintf(cOutput, "int main(int argc, strng argv[]){\n");
 
-	fprintf(cOutput, "%s\n", parse(lexer(fileText)));
+	fprintf(cOutput, "%s\n", parse(lexed));
 	fprintf(cOutput, "\treturn 0;\n}");
 	fclose(cOutput);
 }
