@@ -15,6 +15,7 @@
 	"    -c             -> Generate C File\n"           \
 	"    -asm           -> Generate Assembly File\n"    \
 	"\n"                                                \
+	"    -s | --script  -> Run in script mode\n"        \
 	"    -h | --help    -> Print this documentation\n"  \
 	"    -v | --version -> Print current fltc version\n"
 #define VERSION "1.0.1\n"
@@ -24,7 +25,7 @@ void touch(strng name);
 void rm(strng name);
 void run(int argc, strng argv[], bool running);
 
-strng flags[] = {"-r", "--run", "-i", "-o", "-asm", "-c", "-h", "--help", "-v", "--version"};
+strng flags[] = {"-s", "--script", "-i", "-o", "-asm", "-c", "-h", "--help", "-v", "--version"};
 
 int main(int argc, strng argv[]) {
 	// CHECK GCC
@@ -82,7 +83,7 @@ void run(int argc, strng argv[], bool running) {
 		bool flagExists = false;
 
 		for (size_t j = 0; j < sizeof(flags) / sizeof(flags[0]); ++j) {
-			if (strcmp(flags[j], argv[i]) == 0) {
+			if (streq(flags[j], argv[i])) {
 				flagExists = true;
 			}
 		}
@@ -91,11 +92,16 @@ void run(int argc, strng argv[], bool running) {
 			exit(EXIT_SUCCESS);
 		}
 
-		if ((strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--run") == 0) && running == false) {
+		if ((streq(argv[i], "-s") || streq(argv[i], "--script"))) {
+			if (running == true) {
+				printf("Cannot run script mode in script mode\n");
+				exit(EXIT_FAILURE);
+			}
 			lua_State* L = luaL_newstate();
 			luaL_openlibs(L);
 			if (luaL_loadfile(L, ".fltc.lua") || lua_pcall(L, 0, 0, 0)) {
 				printf("Could not open '.fltc.lua':\n%s\n", lua_tostring(L, -1));
+				exit(EXIT_FAILURE);
 			}
 
 			lua_getglobal(L, "flt_args");
@@ -116,29 +122,29 @@ void run(int argc, strng argv[], bool running) {
 			run(len, args, true);
 			return;
 		}
-		if (strcmp(argv[i], "-i") == 0) {
+		if (streq(argv[i], "-i")) {
 			inFileName = argv[i + 1];
 			++i;
 			hasInput = true;
 			continue;
-		} else if (strcmp(argv[i], "-o") == 0) {
+		} else if (streq(argv[i], "-o")) {
 			outFileName = argv[i + 1];
 			++i;
 			hasOutput = true;
 			continue;
 		}
 
-		else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+		else if (str2eq(argv[i], "-h", "--help")) {
 			printf(HELP);
 			exit(EXIT_SUCCESS);
-		} else if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--version") == 0) {
+		} else if (str2eq(argv[i], "-v", "--version")) {
 			printf(VERSION);
 			exit(EXIT_SUCCESS);
 		}
 
-		else if (strcmp(argv[i], "-c") == 0) {
+		else if (streq(argv[i], "-c")) {
 			mode = 1;
-		} else if (strcmp(argv[i], "-asm") == 0) {
+		} else if (streq(argv[i], "-asm")) {
 			mode = 2;
 		}
 	}
@@ -160,7 +166,7 @@ void run(int argc, strng argv[], bool running) {
 		rm(compileFolder);
 	} else if (mode == 1) {
 		strng cFileName = textFormat("%s", outFileName);
-		if (strcmp((cFileName + (strlen(cFileName) - 2)), ".c") != 0)
+		if (streq((cFileName + (strlen(cFileName) - 2)), ".c"))
 			cFileName = textFormat("%s.c", cFileName);
 		compile(inFileName, cFileName);
 	} else if (mode == 2) {

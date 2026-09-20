@@ -7,18 +7,13 @@
 #include <limits.h>
 #include <math.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define READ "r"
 #define WRITE "w"
-
-// Booleans //
-
-#define bool _Bool
-#define true 1
-#define false 0
 
 // Strings //
 
@@ -211,6 +206,13 @@ strng textInsert(strng text, strng inserted, int position) {
 	}
 
 	return finalText;
+}
+
+bool streq(strng strng1, strng strng2) {
+	return strcmp(strng1, strng2) == 0;
+}
+bool str2eq(strng strng1, strng strng2, strng strng3) {
+	return streq(strng1, strng2) || streq(strng1, strng3);
 }
 
 // files //
