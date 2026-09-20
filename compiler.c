@@ -20,6 +20,8 @@
 	"    -v | --version -> Print current fltc version\n"
 #define VERSION "1.0.1\n"
 
+#define DEFAULT_FLTC_LUA_FILE "fltc.lua"
+
 void dir(strng dirName);
 void touch(strng name);
 void rm(strng name);
@@ -69,6 +71,14 @@ void rm(strng name) {
 	}
 }
 
+strng necessaryFileExt(strng filename, strng extension) {
+	strng workingFilename = strdup(filename);
+	strng workingExtension = strdup(extension);
+	if (!streq((workingFilename + (strlen(workingFilename) - strlen(workingExtension))), workingExtension))
+		workingFilename = textFormat("%s%s", workingFilename, workingExtension);
+	return workingFilename;
+}
+
 void run(int argc, strng argv[], bool running) {
 	strng inFileName = "\0";
 	strng outFileName = "\0";
@@ -99,8 +109,8 @@ void run(int argc, strng argv[], bool running) {
 			}
 			lua_State* L = luaL_newstate();
 			luaL_openlibs(L);
-			if (luaL_loadfile(L, ".fltc.lua") || lua_pcall(L, 0, 0, 0)) {
-				printf("Could not open '.fltc.lua':\n%s\n", lua_tostring(L, -1));
+			if (luaL_loadfile(L, DEFAULT_FLTC_LUA_FILE) || lua_pcall(L, 0, 0, 0)) {
+				printf("Could not open '" DEFAULT_FLTC_LUA_FILE "':\n%s\n", lua_tostring(L, -1));
 				exit(EXIT_FAILURE);
 			}
 
@@ -153,6 +163,8 @@ void run(int argc, strng argv[], bool running) {
 		exit(EXIT_SUCCESS);
 	}
 	if (mode == 0) {
+		// COMPILING
+
 		dir(compileFolder);
 
 		strng cFileName = textFormat(".fltc/%s.c", outFileName);
@@ -165,14 +177,17 @@ void run(int argc, strng argv[], bool running) {
 
 		rm(compileFolder);
 	} else if (mode == 1) {
-		strng cFileName = textFormat("%s", outFileName);
-		if (streq((cFileName + (strlen(cFileName) - 2)), ".c"))
-			cFileName = textFormat("%s.c", cFileName);
-		compile(inFileName, cFileName);
+		// C TRANSPILING
+
+		outFileName = necessaryFileExt(outFileName, ".c");
+		compile(inFileName, outFileName);
 	} else if (mode == 2) {
+		// ASM TRANSPILING
+
 		dir(compileFolder);
 
 		strng cFileName = textFormat(".fltc/%s.c", outFileName);
+		outFileName = necessaryFileExt(outFileName, ".asm");
 		compile(inFileName, cFileName);
 		if (fork() > 0)
 			wait(NULL);

@@ -16,7 +16,6 @@ void compile(strng fileName, strng cFileName) {
 	{
 		fprintf(cOutput,
 				"#include <stdio.h>\n"
-				"#include <stdarg.h>\n"
 				"\n");
 	}
 	fprintf(cOutput, "int main(int argc, char* argv[]){\n");

@@ -1,5 +1,5 @@
 local fileName = "main.flt"
-local execName = "main.c"
+local execName = "main"
 
 flt_args = {
 	"-i",
