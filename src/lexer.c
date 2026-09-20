@@ -1,12 +1,10 @@
-#include <stddef.h>
-
 #include "essentials.h"
 
 #pragma once
 
 #define MAX_TOKENS 0x7fff
 
-typedef enum tok_t {
+typedef enum TokenType {
 	NUMBER = (int)'N',
 	KEYWORD = (int)'K',
 	VARIABLE = (int)'V',
@@ -18,46 +16,61 @@ typedef struct tok {
 	strng token;
 	TokenType type;
 } Token;
-typedef struct toks {
-	Token* tokens;
-	bool hasNumber;
-	bool hasBool;
-	bool hasStrng;
-} Tokens;
+
+typedef Token* Tokens;
 
 // VARIABLES
-#define NUMBER_VAR 0
 strng variables[] = {
-	"nmbr"};
+	// NUMBERS
+	"nmbr",
+	"fnmbr",
+
+	"nmbr8",
+	"nmbr16",
+	"nmbr32",
+	"nmbr64",
+	"unmbr8",
+	"unmbr16",
+	"unmbr32",
+	"unmbr64",
+	"fnmbr16",
+	"fnmbr32",
+	"fnmbr64",
+
+	// OTHER
+	"bool",
+	"strng"};
+strng variablesRep[] = {
+	// NUMBERS
+	"long int",
+	"double",
+
+	"char",
+	"int",
+	"long int",
+	"long long int",
+	"unsigned char",
+	"unsigned int",
+	"unsigned long int",
+	"unsigned long long int",
+	"float",
+	"double",
+	"long double",
+
+	// OTHER
+	"char",
+	"char*"};
 
 // KEYWORDS
-#define RETURN_KEYWORD 0
 strng keywords[] = {
 	"return"};
+strng keywordsRep[] = {"return"};
 
-void tokenAppend(Token* tokenTable, Token token) {
-	strng word = strdup(token.token);
-	for (int i = 0; i < MAX_TOKENS; ++i) {
-		if (!tokenTable[i].token || !tokenTable[i].type) {
-			tokenTable[i].token = word;
-			tokenTable[i].type = token.type;
-			break;
-		}
-	}
-}
-
-bool needleInHaystack(char needle, strng haystack) {
-	for (size_t i = 0; i <= strlen(haystack); ++i) {
-		if (tolower(haystack[i]) == tolower(needle))
-			return true;
-	}
-
-	return false;
-}
+void tokenAppend(Tokens tokenTable, Token token);
+bool needleInHaystack(char needle, strng haystack);
 
 Tokens lexer(strng string) {
-	Tokens tokenTable = {.tokens = calloc(MAX_TOKENS, sizeof(Token)), .hasStrng = false, .hasBool = false, .hasNumber = false};
-	Token* tokens = tokenTable.tokens;
+	Tokens tokens = calloc(MAX_TOKENS, sizeof(Token));
 	if (!tokens)
 		return (Tokens){NULL};
 
@@ -68,38 +81,6 @@ Tokens lexer(strng string) {
 			char word[2] = {string[i], '\0'};
 			tokenAppend(tokens, (Token){.token = word, .type = NEWLINE});
 			continue;
-		} else if (needleInHaystack(string[i], "_abcdefghijklmnopqrstuvwxyz")) {
-			int j = i;
-			for (; j <= (int)strlen(string); ++j)
-				if (!needleInHaystack(string[j], "_abcdefghijklmnopqrstuvwxyz"))
-					break;
-
-			char word[j - i];
-			for (int k = i; k <= j; ++k) {
-				word[k - i] = string[k];
-			}
-
-			word[j - i] = '\0';
-
-			bool keyword = false;
-			bool variable = false;
-
-			for (size_t k = 0; k < sizeof(keywords) / sizeof(keywords[0]); ++k)
-				if (strcmp(keywords[k], word) == 0) keyword = true;
-
-			for (size_t k = 0; k < sizeof(variables) / sizeof(variables[0]); ++k)
-				if (strcmp(variables[k], word) == 0) variable = true;
-
-			if (keyword)
-				tokenAppend(tokens, (Token){word, KEYWORD});
-			else if (variable) {
-				tokenAppend(tokens, (Token){word, VARIABLE});
-				if (strcmp(word, variables[NUMBER_VAR]) == 0) {
-					tokenTable.hasNumber = true;
-				}
-			} else
-				tokenAppend(tokens, (Token){word, IDENTIFIER});
-			i = j - 1;
 		}
 
 		// NUMERIC //
@@ -122,7 +103,60 @@ Tokens lexer(strng string) {
 			char word[2] = {'=', '\0'};
 			tokenAppend(tokens, (Token){word, ASSIGNMENT});
 		}
+
+		// WORDS
+
+		else if (needleInHaystack(string[i], "_abcdefghijklmnopqrstuvwxyz1234567890")) {
+			int j = i;
+			for (; j <= (int)strlen(string); ++j)
+				if (!needleInHaystack(string[j], "_abcdefghijklmnopqrstuvwxyz1234567890"))
+					break;
+
+			char word[j - i];
+			for (int k = i; k <= j; ++k) {
+				word[k - i] = string[k];
+			}
+
+			word[j - i] = '\0';
+
+			bool keyword = false;
+			bool variable = false;
+
+			for (size_t k = 0; k < sizeof(keywords) / sizeof(keywords[0]); ++k)
+				if (strcmp(keywords[k], word) == 0) keyword = true;
+
+			for (size_t k = 0; k < sizeof(variables) / sizeof(variables[0]); ++k)
+				if (strcmp(variables[k], word) == 0) variable = true;
+
+			if (keyword)
+				tokenAppend(tokens, (Token){word, KEYWORD});
+			else if (variable) {
+				tokenAppend(tokens, (Token){word, VARIABLE});
+			} else
+				tokenAppend(tokens, (Token){word, IDENTIFIER});
+			i = j - 1;
+		}
 	}
 
-	return tokenTable;
+	return tokens;
+}
+
+void tokenAppend(Token* tokenTable, Token token) {
+	strng word = strdup(token.token);
+	for (int i = 0; i < MAX_TOKENS; ++i) {
+		if (!tokenTable[i].token || !tokenTable[i].type) {
+			tokenTable[i].token = word;
+			tokenTable[i].type = token.type;
+			break;
+		}
+	}
+}
+
+bool needleInHaystack(char needle, strng haystack) {
+	for (size_t i = 0; i <= strlen(haystack); ++i) {
+		if (tolower(haystack[i]) == tolower(needle))
+			return true;
+	}
+
+	return false;
 }

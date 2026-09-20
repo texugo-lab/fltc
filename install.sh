@@ -4,6 +4,7 @@ os="$OSTYPE"
 
 fileName="compiler.c"
 executableName="fltc"
+params="-Wall -Wextra -g $(pkg-config --libs lua5.4)"
 location="./"
 
 case "$OSTYPE" in
@@ -26,7 +27,7 @@ if [ "$os" == "linux" ]; then
 		echo "✅ GCC found"
 	fi
 	location="/usr/local/bin"
-	sudo gcc $fileName -Wall -Wextra -o $location/$executableName
+	sudo gcc $fileName $params -o $location/$executableName
 elif [ "$os" == "win" ]; then
 	if [ "$GCC" == "false" ]; then
 		echo "❌ GCC not found"
@@ -34,9 +35,9 @@ elif [ "$os" == "win" ]; then
 	elif [ "$GCC" == "true" ]; then
 		echo "✅ GCC found"
 		location="$HOME/bin"
-		sudo gcc $fileName -Wall -Wextra -o $location/$executableName.exe
+		sudo gcc $fileName $params -o $location/$executableName.exe
 	fi
 elif [ "$os" == "macos" ]; then
 	location="/usr/local/bin"
-	sudo gcc $fileName -Wall -Wextra -o $location/$executableName.app
+	sudo gcc $fileName $params -o $location/$executableName.app
 fi
